@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 import os
-from fpdf import FPDF
+from fpdf2 import FPDF
 
 st.set_page_config(page_title="🦺 세이프유 웍스 - 서울특별시 버전", layout="wide")
 
