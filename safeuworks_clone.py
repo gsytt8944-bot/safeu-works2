@@ -2,16 +2,15 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 import os
-from fpdf2 import FPDF
+from fpdf import FPDF
 
-st.set_page_config(page_title="🦺 세이프유 웍스 - 서울특별시 버전", layout="wide")
+st.set_page_config(page_title="🦺 세이프유 웍스 - 서울특별시", layout="wide")
 
 DATA_FILE = "accident_data.csv"
 
 if not os.path.exists(DATA_FILE):
     pd.DataFrame(columns=["날짜", "지역", "지역코드", "사고유형", "내용", "사진경로", "보고서"]).to_csv(DATA_FILE, index=False)
 
-# ✅ 서울특별시 25개 구 지역코드 (법정동코드 기준)
 SEOUL_REGION_CODES = {
     "서울특별시 종로구": "11110",
     "서울특별시 중구": "11140",
@@ -44,9 +43,6 @@ st.title("🦺 세이프유 웍스 - 서울특별시 안전관리 자동화 시�
 
 tab1, tab2, tab3 = st.tabs(["📋 사고기록", "📊 사고현황", "⚙️ 설정"])
 
-# -------------------------------------------------------
-# 📋 사고기록 탭
-# -------------------------------------------------------
 with tab1:
     st.subheader("사고기록 등록")
 
@@ -75,32 +71,19 @@ with tab1:
                 with open(photo_path, "wb") as f:
                     f.write(photo.getbuffer())
 
-            # -----------------------------
-            # 📄 PDF 보고서 자동 생성
-            # -----------------------------
             pdf_dir = "reports"
             os.makedirs(pdf_dir, exist_ok=True)
             pdf_path = os.path.join(pdf_dir, f"{date.strftime('%Y%m%d')}_{region}_사고보고서.pdf")
 
-            from fpdf import FPDF
-            import os
-
-            # PDF 보고서 생성 부분에서
+            # ✅ 한글 폰트 등록 (Streamlit Cloud 환경에서도 작동)
             pdf = FPDF()
             pdf.add_page()
+            font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
+            pdf.add_font("DejaVu", "", font_path, uni=True)
+            pdf.set_font("DejaVu", "", 16)
 
-            # ✅ 한글 폰트 등록
-            font_path = r"C:\Windows\Fonts\malgun.ttf"  # 또는 다른 경로의 TTF 파일
-            if os.path.exists(font_path):
-                pdf.add_font('malgun', '', font_path, uni=True)
-                pdf.set_font('malgun', '', 16)
-            else:
-                st.warning("⚠️ 한글 폰트를 찾을 수 없습니다. C:\\Windows\\Fonts\\malgun.ttf 경로를 확인하세요.")
-                pdf.set_font("Arial", "", 16)
-
-            # 이후 기존 코드
             pdf.cell(200, 10, txt="사고 보고서 (SafeU Works)", ln=True, align="C")
-            pdf.set_font('malgun', '', 12)
+            pdf.set_font("DejaVu", "", 12)
             pdf.cell(200, 10, txt=f"날짜: {date}", ln=True)
             pdf.cell(200, 10, txt=f"지역: {region} ({region_code})", ln=True)
             pdf.cell(200, 10, txt=f"사고유형: {accident_type}", ln=True)
@@ -114,9 +97,6 @@ with tab1:
 
             pdf.output(pdf_path)
 
-            # -----------------------------
-            # 데이터 저장
-            # -----------------------------
             df = pd.read_csv(DATA_FILE)
             new_row = {
                 "날짜": date,
@@ -133,9 +113,6 @@ with tab1:
             st.success("✅ 사고기록이 저장되고 보고서가 자동 생성되었습니다.")
             st.download_button("📄 보고서 다운로드", open(pdf_path, "rb"), file_name=os.path.basename(pdf_path))
 
-# -------------------------------------------------------
-# 📊 사고현황 탭
-# -------------------------------------------------------
 with tab2:
     st.subheader("사고현황 통계")
     df = pd.read_csv(DATA_FILE)
@@ -149,9 +126,6 @@ with tab2:
         st.write("사고유형별 비율(%)")
         st.dataframe(chart_data)
 
-# -------------------------------------------------------
-# ⚙️ 설정 탭
-# -------------------------------------------------------
 with tab3:
     if st.button("데이터 초기화"):
         pd.DataFrame(columns=["날짜", "지역", "지역코드", "사고유형", "내용", "사진경로", "보고서"]).to_csv(DATA_FILE, index=False)
